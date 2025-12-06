@@ -1,89 +1,128 @@
 /* Location: frontend/styles/style.css */
 
-/* 1. Define custom properties (CSS Variables) for easy color changes */
+/* ===================================================
+   1. Design System Variables
+   =================================================== */
 :root {
-    --primary-color: #007bff;      /* A vibrant blue for main actions */
-    --primary-dark: #0056b3;       /* Darker shade for hover states */
-    --background-light: #f8f9fa;   /* Very light background */
-    --text-color: #343a40;         /* Dark, readable text */
-    --border-color: #ced4da;       /* Light gray border */
-    --card-background: #ffffff;    /* White for content boxes */
-    --spacing-small: 8px;
-    --spacing-medium: 15px;
+    /* Color Palette */
+    --color-primary: #334466;     /* Deep Indigo - Main brand color */
+    --color-secondary: #008080;   /* Soft Teal - Accent color for hover/secondary actions */
+    --color-background: #eeeeee;  /* Very light gray/off-white */
+    --color-card-bg: #ffffff;     /* Pure white for content cards */
+    --color-text-dark: #2c3e50;   /* Dark navy for main text */
+    --color-border: #bbbbbb;      /* Medium gray for distinct borders */
+
+    /* Spacing & Sizing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --border-radius: 6px;
+    --transition-speed: 0.2s;
 }
 
-/* 2. Global Reset and Base Styles */
+/* Apply box-sizing globally for predictable layouts */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ===================================================
+   2. Base & Typography
+   =================================================== */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
-    padding: var(--spacing-medium);
-    background: var(--background-light);
-    color: var(--text-color);
-    line-height: 1.6; /* Improved readability */
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif; /* Professional, clean font stack */
+    padding: var(--space-lg);
+    background: var(--color-background);
+    color: var(--color-text-dark);
+    line-height: 1.55;
+    margin: 0;
 }
 
-/* 3. Typography Enhancements */
 h1, h2, h3 {
     margin-top: 0;
-    margin-bottom: var(--spacing-medium);
-    color: var(--primary-dark);
+    margin-bottom: var(--space-md);
+    color: var(--color-primary); /* Use primary color for headings */
+    font-weight: 700;
 }
 
-/* 4. Anchor (Link) Styling - Now acts as a button/pill */
+/* ===================================================
+   3. Interactive Elements (Links & Buttons)
+   =================================================== */
+
+/* Links (Anchor tags) - Styled as distinct primary buttons */
 a {
     display: inline-block;
-    margin: var(--spacing-small) 5px;
-    padding: var(--spacing-small) var(--spacing-medium);
-    background-color: var(--primary-color);
-    color: var(--card-background); /* Use white for text on primary color */
+    margin: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--color-primary);
+    color: var(--color-card-bg); /* White text on dark button */
     text-decoration: none;
-    border-radius: 4px; /* Slightly smoother corners */
-    font-weight: 600; /* Bolder text for visibility */
-    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out; /* Smooth transition */
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+    border: 2px solid var(--color-primary); /* Distinct border */
 }
 
 a:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px); /* Slight lift on hover */
+    background-color: var(--color-secondary); /* Hover uses the teal accent */
+    border-color: var(--color-secondary);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 5. Button Styling - Consistent look and feel */
+/* Buttons - Ensure they follow the same style as links */
 button {
-    padding: var(--spacing-small) var(--spacing-medium);
-    margin-top: var(--spacing-small);
-    background-color: var(--primary-color);
-    color: var(--card-background);
-    border: none;
-    border-radius: 4px;
+    padding: var(--space-sm) var(--space-md);
+    margin-top: var(--space-sm);
+    background-color: var(--color-primary);
+    color: var(--color-card-bg);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--border-radius);
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    font-weight: 600;
+    transition: background-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 button:hover {
-    background-color: var(--primary-dark);
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 6. Input Field Styling - Clearer focus and presentation */
+/* ===================================================
+   4. Form Elements
+   =================================================== */
 input[type=text] {
-    padding: var(--spacing-small);
-    margin: var(--spacing-small) 0;
-    width: 250px; /* Increased width for better usability */
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
-    transition: border-color 0.3s;
+    padding: var(--space-sm);
+    margin: var(--space-xs) 0;
+    min-width: 250px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 16px; /* Prevents mobile zoom issues */
+    transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 input[type=text]:focus {
-    border-color: var(--primary-color); /* Highlight border on focus */
-    outline: none; /* Remove default browser outline */
+    border-color: var(--color-secondary); /* Teal focus ring */
+    box-shadow: 0 0 0 2px rgba(0, 128, 128, 0.2); /* Soft teal glow */
+    outline: none;
 }
 
-/* 7. Shelf Container Styling - Using a "card" style */
+/* ===================================================
+   5. Component Styling (Shelves)
+   =================================================== */
 #shelves div {
-    border: 1px solid var(--border-color);
-    padding: var(--spacing-medium);
-    margin-bottom: var(--spacing-medium);
-    background: var(--card-background);
-    border-radius: 6px; /* A nice corner radius for the cards */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
+    /* Content Card Style */
+    border: 1px solid var(--color-border);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    background: var(--color-card-bg);
+    border-radius: var(--border-radius);
+    /* Deeper, more distinct shadow */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.3s ease;
+}
+
+#shelves div:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12); /* Slightly elevate on hover */
 }
