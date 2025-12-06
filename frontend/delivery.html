@@ -1,0 +1,56 @@
+<!-- Location: frontend/delivery.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delivery Interface</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <h1>Delivery Dashboard</h1>
+    <input type="text" id="scanId" placeholder="Scan or enter package ID">
+    <button id="claimBtn">Claim Package</button>
+
+    <h2>Claimed Packages</h2>
+    <div id="claimed"></div>
+
+    <script>
+        let claimedPackages = [];
+
+        async function loadPackages() {
+            const res = await fetch('/api/packages');
+            return await res.json();
+        }
+
+        async function claimPackage() {
+            const id = document.getElementById('scanId').value;
+            if (!id) return alert('Enter package ID');
+            const res = await fetch('/api/packages/' + id);
+            if (!res.ok) return alert('Package not found');
+            const pkg = await res.json();
+            if (pkg.status !== 'Ready for delivery') return alert('Package not ready for delivery');
+            // Update status
+            await fetch('/api/packages/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Out for Delivery' })
+            });
+            claimedPackages.push(pkg);
+            displayClaimed();
+        }
+
+        function displayClaimed() {
+            const div = document.getElementById('claimed');
+            div.innerHTML = '';
+            claimedPackages.forEach(pkg => {
+                const pkgDiv = document.createElement('div');
+                pkgDiv.innerText = `${pkg.id} - ${pkg.recipientName} - ${pkg.status}`;
+                div.appendChild(pkgDiv);
+            });
+        }
+
+        document.getElementById('claimBtn').addEventListener('click', claimPackage);
+
+    </script>
+</body>
+</html>
