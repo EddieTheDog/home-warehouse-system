@@ -1,0 +1,27 @@
+<!-- Location: frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main Dashboard</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <h1>Warehouse Management Dashboard</h1>
+    <div class="links">
+        <a href="frontdesk.html">Front Desk</a>
+        <a href="warehouse.html">Warehouse</a>
+        <a href="delivery.html">Delivery</a>
+        <a href="track.html">Customer Tracking</a>
+    </div>
+    <button id="deleteAll">Delete All Package Data</button>
+
+    <script>
+        document.getElementById('deleteAll').addEventListener('click', async () => {
+            if (!confirm('Are you sure? This will delete all packages.')) return;
+            await fetch('/api/packages', { method: 'DELETE' });
+            alert('All packages deleted.');
+        });
+    </script>
+</body>
+</html>
