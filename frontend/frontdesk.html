@@ -1,0 +1,58 @@
+<!-- Location: frontend/frontdesk.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Front Desk</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <h1>Front Desk - Create Package</h1>
+    <form id="packageForm">
+        <input type="text" id="recipientName" placeholder="Recipient Name" required><br>
+        <input type="text" id="contact" placeholder="Email or Phone" required><br>
+        <input type="text" id="location" placeholder="Location (optional)"><br>
+        <input type="text" id="sender" placeholder="Sender"><br>
+        <button type="submit">Create Package</button>
+    </form>
+
+    <div id="barcodeSection"></div>
+    <button id="nextPackage">Next</button>
+
+    <script>
+        async function generatePackage() {
+            const recipientName = document.getElementById('recipientName').value;
+            const contact = document.getElementById('contact').value;
+            const location = document.getElementById('location').value;
+            const sender = document.getElementById('sender').value;
+
+            if (!recipientName || !contact) {
+                alert('Recipient name and contact required!');
+                return;
+            }
+
+            const res = await fetch('/api/packages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ recipientName, contact, location, sender })
+            });
+
+            const pkg = await res.json();
+            document.getElementById('barcodeSection').innerHTML = `
+                <p>Package ID: ${pkg.id}</p>
+                <p>Scan QR code or barcode (simulate here): ${pkg.id}</p>
+            `;
+        }
+
+        document.getElementById('packageForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            await generatePackage();
+        });
+
+        document.getElementById('nextPackage').addEventListener('click', () => {
+            document.getElementById('packageForm').reset();
+            document.getElementById('barcodeSection').innerHTML = '';
+        });
+    </script>
+</body>
+</html>
