@@ -1,52 +1,142 @@
-// Location: frontend/scripts/frontdesk.js
-// Handles package creation, QR code generation, and barcode display
+// Location: frontend/scripts/warehouse.js
+// Warehouse script with scan input, check-in, move, ready-for-delivery
 
-// Include QRCode.js in your frontdesk.html head:
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+async function loadPackages() {
+    const res = await fetch('/api/packages');
+    return await res.json();
+}
 
-async function generatePackage() {
-    const recipientName = document.getElementById('recipientName').value;
-    const contact = document.getElementById('contact').value;
-    const location = document.getElementById('location').value;
-    const sender = document.getElementById('sender').value;
-
-    if (!recipientName || !contact) {
-        alert('Recipient name and contact are required!');
-        return;
+function getColor(status) {
+    switch (status) {
+        case 'Waiting for check-in': return 'yellow';
+        case 'Preparing for Movement': return 'orange';
+        case 'Ready for delivery': return 'green';
+        case 'Temporary Overflow': return 'red';
+        case 'Out for Delivery': return 'blue';
+        default: return 'gray';
     }
+}
 
-    const res = await fetch('/api/packages', {
-        method: 'POST',
+async function updatePackage(pkg) {
+    await fetch('/api/packages/' + pkg.id, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientName, contact, location, sender })
-    });
-
-    const pkg = await res.json();
-
-    const trackURL = `${window.location.origin}/track.html?package_id=${pkg.id}`;
-
-    document.getElementById('barcodeSection').innerHTML = `
-        <p>Package ID: ${pkg.id}</p>
-        <p>Barcode (for warehouse): ${pkg.id}</p>
-        <div id="qrcode"></div>
-    `;
-
-    // Generate QR code
-    new QRCode(document.getElementById("qrcode"), {
-        text: trackURL,
-        width: 128,
-        height: 128
+        body: JSON.stringify(pkg)
     });
 }
 
-// Form submit
-document.getElementById('packageForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    await generatePackage();
-});
+async function scanPackage() {
+    const scanInput = document.getElementById('scanInput').value.trim();
+    if (!scanInput) return alert('Please scan or type a package ID');
 
-// Next button clears form and barcode
-document.getElementById('nextPackage').addEventListener('click', () => {
-    document.getElementById('packageForm').reset();
-    document.getElementById('barcodeSection').innerHTML = '';
-});
+    const packages = await loadPackages();
+    const pkg = packages.find(p => p.id === scanInput);
+
+    if (!pkg) return alert('Package not found');
+    if (pkg.status === 'Ready for delivery' || pkg.status === 'Out for Delivery') {
+        return alert('Package already ready or out for delivery');
+    }
+
+    if (pkg.status === 'Waiting for check-in') {
+        pkg.status = 'Ready for delivery';
+        await updatePackage(pkg);
+        alert(`${pkg.id} check-in completed.`);
+    } else if (pkg.status === 'Preparing for Movement') {
+        alert(`${pkg.id} is preparing for movement. Move it first.`);
+    } else if (pkg.status === 'Temporary Overflow') {
+        alert(`${pkg.id} is in temporary overflow. Move to a shelf first.`);
+    }
+
+    document.getElementById('scanInput').value = '';
+    displayWarehouse();
+}
+
+async function displayWarehouse() {
+    const packages = await loadPackages();
+    const totalShelves = 5;
+    const maxPerShelf = 3;
+
+    // Assign shelves if empty
+    packages.forEach(pkg => {
+        if (!pkg.shelf || pkg.shelf === 'TM') {
+            let assigned = false;
+            for (let s = 1; s <= totalShelves; s++) {
+                const shelfName = 'O' + s;
+                const count = packages.filter(p => p.shelf === shelfName).length;
+                if (count < maxPerShelf) {
+                    pkg.shelf = shelfName;
+                    if (pkg.status === 'Temporary Overflow') pkg.status = 'Waiting for check-in';
+                    assigned = true;
+                    break;
+                }
+            }
+            if (!assigned) pkg.shelf = 'TM';
+        }
+    });
+
+    for (const pkg of packages) await updatePackage(pkg);
+
+    const grouped = {};
+    packages.forEach(pkg => {
+        if (!grouped[pkg.shelf]) grouped[pkg.shelf] = [];
+        grouped[pkg.shelf].push(pkg);
+    });
+
+    const shelfDiv = document.getElementById('shelves');
+    shelfDiv.innerHTML = '';
+
+    for (let s = 1; s <= totalShelves; s++) {
+        const shelfName = 'O' + s;
+        const shelfBlock = document.createElement('div');
+        shelfBlock.innerHTML = `<h3>${shelfName}</h3>`;
+        shelfBlock.style.marginBottom = '16px';
+        shelfBlock.style.padding = '8px';
+        shelfBlock.style.background = '#fff';
+        shelfBlock.style.borderRadius = '6px';
+        shelfBlock.style.boxShadow = '0 5px 15px rgba(0,0,0,0.08)';
+
+        for (let slot = 0; slot < maxPerShelf; slot++) {
+            const pkg = grouped[shelfName]?.[slot];
+            const slotDiv = document.createElement('div');
+            slotDiv.style.margin = '4px 0';
+            slotDiv.style.padding = '8px';
+            slotDiv.style.border = '1px solid #bbb';
+            slotDiv.style.borderRadius = '6px';
+            slotDiv.style.backgroundColor = '#eee';
+
+            if (pkg) {
+                slotDiv.innerText = `${pkg.id} (${pkg.status})`;
+                slotDiv.style.backgroundColor = getColor(pkg.status);
+            } else {
+                slotDiv.innerText = 'Empty';
+            }
+
+            shelfBlock.appendChild(slotDiv);
+        }
+
+        shelfDiv.appendChild(shelfBlock);
+    }
+
+    // Task board
+    const tasksDiv = document.getElementById('tasks');
+    tasksDiv.innerHTML = '';
+    packages.forEach(pkg => {
+        if (pkg.status === 'Waiting for check-in' || pkg.status === 'Preparing for Movement') {
+            const taskDiv = document.createElement('div');
+            taskDiv.innerText = `${pkg.id}: ${pkg.status}`;
+            taskDiv.style.padding = '4px';
+            taskDiv.style.margin = '2px 0';
+            taskDiv.style.border = '1px solid #bbb';
+            taskDiv.style.borderRadius = '6px';
+            taskDiv.style.backgroundColor = getColor(pkg.status);
+            tasksDiv.appendChild(taskDiv);
+        }
+    });
+}
+
+// Event listener for scan
+document.getElementById('scanButton').addEventListener('click', scanPackage);
+
+// Initial load and refresh every 5s
+displayWarehouse();
+setInterval(displayWarehouse, 5000);
