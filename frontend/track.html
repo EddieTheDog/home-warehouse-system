@@ -1,0 +1,32 @@
+<!-- Location: frontend/track.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Tracking</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <h1>Track Your Package</h1>
+    <input type="text" id="packageId" placeholder="Enter Package ID from QR code">
+    <button id="trackBtn">Track</button>
+
+    <div id="status"></div>
+
+    <script>
+        document.getElementById('trackBtn').addEventListener('click', async () => {
+            const id = document.getElementById('packageId').value;
+            if (!id) return alert('Enter a package ID.');
+            const res = await fetch('/api/packages/' + id);
+            if (!res.ok) return document.getElementById('status').innerText = 'Package not found.';
+            const pkg = await res.json();
+            document.getElementById('status').innerHTML = `
+                <p>Package ID: ${pkg.id}</p>
+                <p>Recipient: ${pkg.recipientName}</p>
+                <p>Status: ${pkg.status}</p>
+                <p>Location: ${pkg.location || 'Not specified'}</p>
+            `;
+        });
+    </script>
+</body>
+</html>
