@@ -1,5 +1,5 @@
 // Location: frontend/scripts/warehouse.js
-// Full warehouse script with interactive task completion
+// Warehouse script: shows all shelves, all slots, and allows check-in, move, ready-for-delivery
 
 async function loadPackages() {
     const res = await fetch('/api/packages');
@@ -17,7 +17,7 @@ function getColor(status) {
     }
 }
 
-// Function to update a package
+// Function to update package via API
 async function updatePackage(pkg) {
     await fetch('/api/packages/' + pkg.id, {
         method: 'PUT',
@@ -26,14 +26,14 @@ async function updatePackage(pkg) {
     });
 }
 
-// Display warehouse
+// Display warehouse and tasks
 async function displayWarehouse() {
     const packages = await loadPackages();
     const totalShelves = 5; // O1-O5
     const maxPerShelf = 3;
 
     // Assign shelves automatically if empty
-    packages.forEach((pkg, index) => {
+    packages.forEach(pkg => {
         if (!pkg.shelf || pkg.shelf === 'TM') {
             let assigned = false;
             for (let s = 1; s <= totalShelves; s++) {
@@ -60,10 +60,10 @@ async function displayWarehouse() {
         grouped[pkg.shelf].push(pkg);
     });
 
-    // Display shelves
     const shelfDiv = document.getElementById('shelves');
     shelfDiv.innerHTML = '';
 
+    // Display all shelves and slots
     for (let s = 1; s <= totalShelves; s++) {
         const shelfName = 'O' + s;
         const shelfBlock = document.createElement('div');
@@ -74,22 +74,28 @@ async function displayWarehouse() {
             const slotDiv = document.createElement('div');
             slotDiv.style.margin = '2px';
             slotDiv.style.padding = '4px';
+            slotDiv.style.border = '1px solid #ccc';
 
             if (pkg) {
                 slotDiv.innerText = `${pkg.id} (${pkg.status})`;
                 slotDiv.style.backgroundColor = getColor(pkg.status);
                 slotDiv.style.cursor = 'pointer';
 
+                // Click to perform warehouse task
                 slotDiv.onclick = async () => {
-                    // Task options
-                    let action = prompt(`Select task for ${pkg.id}:\n1 = Complete Check-in\n2 = Move to another shelf\n3 = Mark Ready for Delivery`);
+                    let action = prompt(
+                        `Select task for ${pkg.id}:\n` +
+                        `1 = Complete Check-in\n` +
+                        `2 = Move to another shelf\n` +
+                        `3 = Mark Ready for Delivery`
+                    );
                     if (!action) return;
 
                     if (action === '1' && pkg.status === 'Waiting for check-in') {
                         pkg.status = 'Ready for delivery';
                         alert(`${pkg.id} check-in completed.`);
                     } else if (action === '2') {
-                        let newShelf = prompt(`Enter new shelf (O1-O5 or TM)`);
+                        let newShelf = prompt('Enter new shelf (O1-O5 or TM)');
                         if (!newShelf) return;
                         pkg.shelf = newShelf;
                         pkg.status = newShelf === 'TM' ? 'Temporary Overflow' : 'Preparing for Movement';
@@ -115,7 +121,7 @@ async function displayWarehouse() {
         shelfDiv.appendChild(shelfBlock);
     }
 
-    // Display task board
+    // Task board
     const tasksDiv = document.getElementById('tasks');
     tasksDiv.innerHTML = '';
     packages.forEach(pkg => {
@@ -127,6 +133,6 @@ async function displayWarehouse() {
     });
 }
 
-// Refresh every 5 seconds
+// Initial load + refresh every 5 seconds
 displayWarehouse();
 setInterval(displayWarehouse, 5000);
