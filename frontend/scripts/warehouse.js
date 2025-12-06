@@ -1,5 +1,5 @@
 // Location: frontend/scripts/warehouse.js
-// Displays all shelves/slots, color-codes packages, and allows task completion
+// Full warehouse script with interactive task completion
 
 async function loadPackages() {
     const res = await fetch('/api/packages');
@@ -17,24 +17,53 @@ function getColor(status) {
     }
 }
 
+// Function to update a package
+async function updatePackage(pkg) {
+    await fetch('/api/packages/' + pkg.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pkg)
+    });
+}
+
+// Display warehouse
 async function displayWarehouse() {
     const packages = await loadPackages();
-
-    const totalShelves = 5; // Example: O1–O5
+    const totalShelves = 5; // O1-O5
     const maxPerShelf = 3;
 
-    // Group packages by shelf
+    // Assign shelves automatically if empty
+    packages.forEach((pkg, index) => {
+        if (!pkg.shelf || pkg.shelf === 'TM') {
+            let assigned = false;
+            for (let s = 1; s <= totalShelves; s++) {
+                const shelfName = 'O' + s;
+                const count = packages.filter(p => p.shelf === shelfName).length;
+                if (count < maxPerShelf) {
+                    pkg.shelf = shelfName;
+                    if (pkg.status === 'Temporary Overflow') pkg.status = 'Waiting for check-in';
+                    assigned = true;
+                    break;
+                }
+            }
+            if (!assigned) pkg.shelf = 'TM'; // still overflow
+        }
+    });
+
+    // Save updated packages
+    for (const pkg of packages) await updatePackage(pkg);
+
+    // Group by shelf
     const grouped = {};
     packages.forEach(pkg => {
-        if (!pkg.shelf) pkg.shelf = 'TM';
         if (!grouped[pkg.shelf]) grouped[pkg.shelf] = [];
         grouped[pkg.shelf].push(pkg);
     });
 
+    // Display shelves
     const shelfDiv = document.getElementById('shelves');
     shelfDiv.innerHTML = '';
 
-    // Show all shelves
     for (let s = 1; s <= totalShelves; s++) {
         const shelfName = 'O' + s;
         const shelfBlock = document.createElement('div');
@@ -51,14 +80,29 @@ async function displayWarehouse() {
                 slotDiv.style.backgroundColor = getColor(pkg.status);
                 slotDiv.style.cursor = 'pointer';
 
-                // Click to complete check-in task
                 slotDiv.onclick = async () => {
-                    if (pkg.status === 'Waiting for check-in') pkg.status = 'Ready for delivery';
-                    await fetch('/api/packages/' + pkg.id, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: pkg.status })
-                    });
+                    // Task options
+                    let action = prompt(`Select task for ${pkg.id}:\n1 = Complete Check-in\n2 = Move to another shelf\n3 = Mark Ready for Delivery`);
+                    if (!action) return;
+
+                    if (action === '1' && pkg.status === 'Waiting for check-in') {
+                        pkg.status = 'Ready for delivery';
+                        alert(`${pkg.id} check-in completed.`);
+                    } else if (action === '2') {
+                        let newShelf = prompt(`Enter new shelf (O1-O5 or TM)`);
+                        if (!newShelf) return;
+                        pkg.shelf = newShelf;
+                        pkg.status = newShelf === 'TM' ? 'Temporary Overflow' : 'Preparing for Movement';
+                        alert(`${pkg.id} moved to ${newShelf}.`);
+                    } else if (action === '3') {
+                        pkg.status = 'Ready for delivery';
+                        alert(`${pkg.id} marked Ready for Delivery.`);
+                    } else {
+                        alert('Invalid action.');
+                        return;
+                    }
+
+                    await updatePackage(pkg);
                     displayWarehouse();
                 };
             } else {
@@ -68,7 +112,6 @@ async function displayWarehouse() {
 
             shelfBlock.appendChild(slotDiv);
         }
-
         shelfDiv.appendChild(shelfBlock);
     }
 
