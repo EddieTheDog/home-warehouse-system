@@ -1,5 +1,5 @@
 // Location: frontend/scripts/warehouse.js
-// Warehouse script: shows all shelves, all slots, and allows check-in, move, ready-for-delivery
+// Handles warehouse tasks: check-in, move tasks, display shelves, task board
 
 async function loadPackages() {
     const res = await fetch('/api/packages');
@@ -7,7 +7,7 @@ async function loadPackages() {
 }
 
 function getColor(status) {
-    switch (status) {
+    switch(status) {
         case 'Waiting for check-in': return 'yellow';
         case 'Preparing for Movement': return 'orange';
         case 'Ready for delivery': return 'green';
@@ -17,7 +17,6 @@ function getColor(status) {
     }
 }
 
-// Function to update package via API
 async function updatePackage(pkg) {
     await fetch('/api/packages/' + pkg.id, {
         method: 'PUT',
@@ -26,13 +25,43 @@ async function updatePackage(pkg) {
     });
 }
 
-// Display warehouse and tasks
+// Check-in / Scan package
+async function scanPackage() {
+    const scanInput = document.getElementById('scanInput').value.trim();
+    if (!scanInput) return alert('Please scan or type a package ID');
+
+    const packages = await loadPackages();
+    const pkg = packages.find(p => p.id === scanInput);
+
+    if (!pkg) return alert('Package not found');
+
+    // Check-in logic
+    if (pkg.status === 'Waiting for check-in') {
+        pkg.status = 'Ready for delivery';
+        await updatePackage(pkg);
+        alert(`${pkg.id} check-in completed.`);
+    } 
+    else if (pkg.status === 'Preparing for Movement') {
+        alert(`${pkg.id} is preparing for movement. Move it first.`);
+    } 
+    else if (pkg.status === 'Temporary Overflow') {
+        alert(`${pkg.id} is in temporary overflow. Move to a shelf first.`);
+    } 
+    else {
+        alert(`${pkg.id} cannot be processed now.`);
+    }
+
+    document.getElementById('scanInput').value = '';
+    displayWarehouse();
+}
+
+// Display warehouse shelves and task board
 async function displayWarehouse() {
     const packages = await loadPackages();
-    const totalShelves = 5; // O1-O5
+    const totalShelves = 5;
     const maxPerShelf = 3;
 
-    // Assign shelves automatically if empty
+    // Assign shelves if empty or temporary overflow
     packages.forEach(pkg => {
         if (!pkg.shelf || pkg.shelf === 'TM') {
             let assigned = false;
@@ -46,78 +75,53 @@ async function displayWarehouse() {
                     break;
                 }
             }
-            if (!assigned) pkg.shelf = 'TM'; // still overflow
+            if (!assigned) pkg.shelf = 'TM'; // Stay in temporary overflow
         }
     });
 
-    // Save updated packages
+    // Save changes
     for (const pkg of packages) await updatePackage(pkg);
 
-    // Group by shelf
+    // Group packages by shelf
     const grouped = {};
     packages.forEach(pkg => {
         if (!grouped[pkg.shelf]) grouped[pkg.shelf] = [];
         grouped[pkg.shelf].push(pkg);
     });
 
+    // Display shelves
     const shelfDiv = document.getElementById('shelves');
     shelfDiv.innerHTML = '';
 
-    // Display all shelves and slots
     for (let s = 1; s <= totalShelves; s++) {
         const shelfName = 'O' + s;
         const shelfBlock = document.createElement('div');
         shelfBlock.innerHTML = `<h3>${shelfName}</h3>`;
+        shelfBlock.style.marginBottom = '16px';
+        shelfBlock.style.padding = '8px';
+        shelfBlock.style.background = '#fff';
+        shelfBlock.style.borderRadius = '6px';
+        shelfBlock.style.boxShadow = '0 5px 15px rgba(0,0,0,0.08)';
 
         for (let slot = 0; slot < maxPerShelf; slot++) {
             const pkg = grouped[shelfName]?.[slot];
             const slotDiv = document.createElement('div');
-            slotDiv.style.margin = '2px';
-            slotDiv.style.padding = '4px';
-            slotDiv.style.border = '1px solid #ccc';
+            slotDiv.style.margin = '4px 0';
+            slotDiv.style.padding = '8px';
+            slotDiv.style.border = '1px solid #bbb';
+            slotDiv.style.borderRadius = '6px';
+            slotDiv.style.backgroundColor = '#eee';
 
             if (pkg) {
                 slotDiv.innerText = `${pkg.id} (${pkg.status})`;
                 slotDiv.style.backgroundColor = getColor(pkg.status);
-                slotDiv.style.cursor = 'pointer';
-
-                // Click to perform warehouse task
-                slotDiv.onclick = async () => {
-                    let action = prompt(
-                        `Select task for ${pkg.id}:\n` +
-                        `1 = Complete Check-in\n` +
-                        `2 = Move to another shelf\n` +
-                        `3 = Mark Ready for Delivery`
-                    );
-                    if (!action) return;
-
-                    if (action === '1' && pkg.status === 'Waiting for check-in') {
-                        pkg.status = 'Ready for delivery';
-                        alert(`${pkg.id} check-in completed.`);
-                    } else if (action === '2') {
-                        let newShelf = prompt('Enter new shelf (O1-O5 or TM)');
-                        if (!newShelf) return;
-                        pkg.shelf = newShelf;
-                        pkg.status = newShelf === 'TM' ? 'Temporary Overflow' : 'Preparing for Movement';
-                        alert(`${pkg.id} moved to ${newShelf}.`);
-                    } else if (action === '3') {
-                        pkg.status = 'Ready for delivery';
-                        alert(`${pkg.id} marked Ready for Delivery.`);
-                    } else {
-                        alert('Invalid action.');
-                        return;
-                    }
-
-                    await updatePackage(pkg);
-                    displayWarehouse();
-                };
             } else {
                 slotDiv.innerText = 'Empty';
-                slotDiv.style.backgroundColor = '#eee';
             }
 
             shelfBlock.appendChild(slotDiv);
         }
+
         shelfDiv.appendChild(shelfBlock);
     }
 
@@ -128,11 +132,19 @@ async function displayWarehouse() {
         if (pkg.status === 'Waiting for check-in' || pkg.status === 'Preparing for Movement') {
             const taskDiv = document.createElement('div');
             taskDiv.innerText = `${pkg.id}: ${pkg.status}`;
+            taskDiv.style.padding = '4px';
+            taskDiv.style.margin = '2px 0';
+            taskDiv.style.border = '1px solid #bbb';
+            taskDiv.style.borderRadius = '6px';
+            taskDiv.style.backgroundColor = getColor(pkg.status);
             tasksDiv.appendChild(taskDiv);
         }
     });
 }
 
-// Initial load + refresh every 5 seconds
+// Event listener for scan/check-in
+document.getElementById('scanButton').addEventListener('click', scanPackage);
+
+// Initial load and auto-refresh every 5 seconds
 displayWarehouse();
 setInterval(displayWarehouse, 5000);
