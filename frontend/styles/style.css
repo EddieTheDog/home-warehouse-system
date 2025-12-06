@@ -1,42 +1,89 @@
 /* Location: frontend/styles/style.css */
+
+/* 1. Define custom properties (CSS Variables) for easy color changes */
+:root {
+    --primary-color: #007bff;      /* A vibrant blue for main actions */
+    --primary-dark: #0056b3;       /* Darker shade for hover states */
+    --background-light: #f8f9fa;   /* Very light background */
+    --text-color: #343a40;         /* Dark, readable text */
+    --border-color: #ced4da;       /* Light gray border */
+    --card-background: #ffffff;    /* White for content boxes */
+    --spacing-small: 8px;
+    --spacing-medium: 15px;
+}
+
+/* 2. Global Reset and Base Styles */
 body {
-    font-family: Arial, sans-serif;
-    padding: 10px;
-    background: #f5f5f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font stack */
+    padding: var(--spacing-medium);
+    background: var(--background-light);
+    color: var(--text-color);
+    line-height: 1.6; /* Improved readability */
 }
 
+/* 3. Typography Enhancements */
 h1, h2, h3 {
-    margin-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: var(--spacing-medium);
+    color: var(--primary-dark);
 }
 
+/* 4. Anchor (Link) Styling - Now acts as a button/pill */
 a {
     display: inline-block;
-    margin: 5px;
-    padding: 5px 10px;
-    background-color: #3498db;
-    color: white;
+    margin: var(--spacing-small) 5px;
+    padding: var(--spacing-small) var(--spacing-medium);
+    background-color: var(--primary-color);
+    color: var(--card-background); /* Use white for text on primary color */
     text-decoration: none;
-    border-radius: 3px;
+    border-radius: 4px; /* Slightly smoother corners */
+    font-weight: 600; /* Bolder text for visibility */
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out; /* Smooth transition */
 }
 
 a:hover {
-    background-color: #2980b9;
+    background-color: var(--primary-dark);
+    transform: translateY(-1px); /* Slight lift on hover */
 }
 
+/* 5. Button Styling - Consistent look and feel */
 button {
-    padding: 5px 10px;
-    margin-top: 5px;
+    padding: var(--spacing-small) var(--spacing-medium);
+    margin-top: var(--spacing-small);
+    background-color: var(--primary-color);
+    color: var(--card-background);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
 }
 
+button:hover {
+    background-color: var(--primary-dark);
+}
+
+/* 6. Input Field Styling - Clearer focus and presentation */
 input[type=text] {
-    padding: 5px;
-    margin: 3px 0;
-    width: 200px;
+    padding: var(--spacing-small);
+    margin: var(--spacing-small) 0;
+    width: 250px; /* Increased width for better usability */
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    transition: border-color 0.3s;
 }
 
+input[type=text]:focus {
+    border-color: var(--primary-color); /* Highlight border on focus */
+    outline: none; /* Remove default browser outline */
+}
+
+/* 7. Shelf Container Styling - Using a "card" style */
 #shelves div {
-    border: 1px solid #ccc;
-    padding: 5px;
-    margin-bottom: 5px;
-    background: #fff;
+    border: 1px solid var(--border-color);
+    padding: var(--spacing-medium);
+    margin-bottom: var(--spacing-medium);
+    background: var(--card-background);
+    border-radius: 6px; /* A nice corner radius for the cards */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
 }
